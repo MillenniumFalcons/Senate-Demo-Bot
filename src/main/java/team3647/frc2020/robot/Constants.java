@@ -366,7 +366,7 @@ public class Constants {
     }
 
     public static class cBallStopper {
-        public static final int solenoidPin = 4;
+        public static final int ballStopperSolenoidPin = 2;
     }
 
     public static class cField {

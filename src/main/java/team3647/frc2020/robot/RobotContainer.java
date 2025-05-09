@@ -40,6 +40,8 @@ import team3647.frc2020.commands.LoadingStationIntake;
 import team3647.frc2020.commands.MoveHood;
 import team3647.frc2020.commands.OrganizeFeeder;
 import team3647.frc2020.commands.RemoveBalls;
+import team3647.frc2020.commands.RollTunnelForwards;
+import team3647.frc2020.commands.RunIntakeRoller;
 import team3647.frc2020.commands.ShootClosedLoop;
 import team3647.frc2020.commands.StopShooting;
 import team3647.frc2020.commands.StowIntakeAndOrganizeFeeder;
@@ -128,7 +130,7 @@ public class RobotContainer {
 
         //private final Climber m_climber = new Climber(Constants.cClimber.solenoidPin);
 
-        private final BallStopper m_ballStopper = new BallStopper(Constants.cBallStopper.solenoidPin);
+        private final BallStopper m_ballStopper = new BallStopper(Constants.cBallStopper.ballStopperSolenoidPin);
 
         private final GroupPrinter m_printer = GroupPrinter.getInstance();
 
@@ -217,25 +219,35 @@ public class RobotContainer {
                 // m_ballStopper)));
 
                 // One trigger ground intake
-                mainController.leftTrigger.whenPressed(new SequentialCommandGroup(
-                                new RunCommand(m_intake::extendOuter, m_intake).withTimeout(0.2),
-                                new RunCommand(m_intake::extendInner, m_intake).withTimeout(0.2)));
+                // mainController.leftTrigger.whenPressed(new SequentialCommandGroup(
+                //                 new RunCommand(m_intake::extendOuter, m_intake).withTimeout(0.2),
+                //                 new RunCommand(m_intake::extendInner, m_intake).withTimeout(0.2)));
 
-                // loading station
-                mainController.leftTrigger
-                                .whenReleased(new RunCommand(m_intake::retractOuter, m_intake).withTimeout(0.3));
+                // // loading station
+                // mainController.leftTrigger
+                //                 .whenReleased(new RunCommand(m_intake::retractOuter, m_intake).withTimeout(0.3));
 
 
-                mainController.leftBumper.and(mainController.leftTrigger.negate())
-                                .whenActive(new SequentialCommandGroup(
-                                                new RunCommand(m_intake::end, m_intake).withTimeout(0.2),
-                                                new ExtendIntakeToGround(m_intake).withTimeout(0.4),
-                                                new RunCommand(m_intake::retractOuter, m_intake).withTimeout(0.2)));
+                // mainController.leftBumper.and(mainController.leftTrigger.negate())
+                //                 .whenActive(new SequentialCommandGroup(
+                //                                 new RunCommand(m_intake::end, m_intake).withTimeout(0.2),
+                //                                 new ExtendIntakeToGround(m_intake).withTimeout(0.4),
+                //                                 new RunCommand(m_intake::retractOuter, m_intake).withTimeout(0.2)));
 
-                mainController.leftBumper.and(mainController.leftTrigger).whenActive(new ParallelCommandGroup(
-                                new GroundIntake(m_intake), new LoadBalls(m_indexer, m_ballStopper)));
+                // mainController.leftBumper.and(mainController.leftTrigger).whenActive(new ParallelCommandGroup(
+                //                 new GroundIntake(m_intake), new LoadBalls(m_indexer, m_ballStopper)));
 
-                mainController.leftBumper.whenReleased(new ParallelCommandGroup(new RunCommand(m_intake::end, m_intake), new RunCommand(m_indexer::end, m_indexer)));
+                mainController.leftBumper.whenPressed(new ExtendIntakeToGround(m_intake).withTimeout(0.2));
+                mainController.leftBumper.whenReleased(new RunCommand(m_intake::retractOuter, m_intake).withTimeout(0.3));
+                mainController.leftTrigger.whenActive(new ParallelCommandGroup(
+                                new RunIntakeRoller(m_intake, 0.7),
+                                new LoadBalls(m_indexer, m_ballStopper) 
+                ));
+                mainController.leftTrigger.whenReleased(new ParallelCommandGroup(
+                        new RunCommand(m_intake::end, m_intake).withTimeout(0.2),
+                        new RunCommand(m_indexer::end, m_indexer).withTimeout(0.2),
+                ));
+                
 
                 // coController.leftBumper
                 // .whenReleased(new ParallelCommandGroup(new RunCommand(m_intake::end,
@@ -307,7 +319,7 @@ public class RobotContainer {
                                 new ParallelCommandGroup(new MoveHood(m_hood, Constants.cHood.trenchShotPosition),
                                                 new TrenchShot(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper)));
 
-                coController.buttonY.whenActive(new ParallelCommandGroup(
+                mainController.buttonY.whenActive(new ParallelCommandGroup(
                                 new MoveHood(m_hood, Constants.cHood.rightUpToTowerShotPosition),
                                 new BatterShot(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper)));
 
@@ -340,8 +352,7 @@ public class RobotContainer {
                                 new TurretMotionMagic(m_turret, Constants.cTurret.backwardDeg).keepPosition());
 
                 coController.dPadRight.whenPressed(new MoveHood(m_hood, .645));
-                mainController.buttonB.whenPressed(()-> m_intake.extendInner());
-                mainController.buttonX.whenPressed(()-> m_intake.retractInner());
+
 
         }
 
