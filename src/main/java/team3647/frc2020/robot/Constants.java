@@ -192,9 +192,12 @@ public class Constants {
     public static class cIndexer {
         public static final int leftVerticalRollersPin = 22;
         public static final int rightVerticalRollersPin = 21;
-        public static final int tunnelPin = 23;
+        public static final int polycordTunnelPin = 18;
+        public static final int normalTunnelPin = 16;
         public static final int horizontalRollersPin = 24;
         public static final int bannerSensorPin = 1;
+        public static int maxCurrent = 40;
+        public static int stallCurrent = 35;
 
         public static final int PP_VerticalPDPSlot = 10;
         public static final int tunnelPDPSlot = 8;
@@ -211,12 +214,19 @@ public class Constants {
         public static TalonSRXFactory.Configuration rightRollersConfig =
                 new TalonSRXFactory.Configuration(rightVerticalRollersPin,
                         rightVerticalRollersInverted);
-        public static VictorSPXFactory.Configuration tunnelConfig =
-                new VictorSPXFactory.Configuration(tunnelPin).setInverted(tunnelInverted)
-                        .setPDPSlot(8);
         public static VictorSPXFactory.Configuration horizontalRollersConfig =
                 new VictorSPXFactory.Configuration(horizontalRollersPin)
                         .setInverted(horizontalRollersInverted).configOpenLoopRampRate(.3);
+
+        public static final SparkMaxFactory.Configuration polycordTunnelConfig = 
+                new SparkMaxFactory.Configuration(polycordTunnelPin, false)
+                        .currentLimiting(true, maxCurrent, stallCurrent).idleMode(IdleMode.kCoast)
+                        .voltageCompensation(true, 12.0);
+
+        public static final SparkMaxFactory.Configuration normalTunnelConfig = 
+                new SparkMaxFactory.Configuration(normalTunnelPin, false)
+                        .currentLimiting(true, maxCurrent, stallCurrent).idleMode(IdleMode.kCoast)
+                        .voltageCompensation(true, 12.0);
 
     }
 

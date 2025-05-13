@@ -111,7 +111,7 @@ public class RobotContainer {
                         Constants.cFlywheel.slaveConfig, Constants.cFlywheel.pidConfig);
 
         private final Indexer m_indexer = new Indexer(Constants.cIndexer.leftRollersConfig,
-                        Constants.cIndexer.rightRollersConfig, Constants.cIndexer.tunnelConfig,
+                        Constants.cIndexer.rightRollersConfig, Constants.cIndexer.polycordTunnelConfig, Constants.cIndexer.normalTunnelConfig,
                         Constants.cIndexer.horizontalRollersConfig, Constants.cIndexer.bannerSensorPin,
                         pdp::getCurrent);
 
@@ -180,13 +180,6 @@ public class RobotContainer {
                         autoSequenceToRun = sixBallBottom;
                 }
                 System.out.println(Units.metersToInches( startPos.getY()));
- 
-                m_printer.addDouble("tunnel amps", () -> {
-                        return pdp.getCurrent(m_indexer.getTunnelPDPSlot());
-                });
-                m_printer.addDouble("funnel amps", () -> {
-                        return pdp.getCurrent(m_indexer.getTunnelPDPSlot());
-                });
 
                 m_printer.addDouble("shooter rpm based on distance", this::getFlywheelRPM);
                 m_printer.addDouble("kicker wheel amps", m_kickerWheel::getMasterCurrent);
@@ -238,16 +231,17 @@ public class RobotContainer {
                 //                 new GroundIntake(m_intake), new LoadBalls(m_indexer, m_ballStopper)));
 
                 mainController.leftBumper.whenPressed(new ExtendIntakeToGround(m_intake).withTimeout(0.2));
-                mainController.leftBumper.whenReleased(new RunCommand(m_intake::retractOuter, m_intake).withTimeout(0.3));
-                mainController.leftTrigger.whenActive(new ParallelCommandGroup(
+                mainController.leftBumper.whenReleased(
+                        new RunCommand(m_intake::retractOuter, m_intake).withTimeout(0.3));
+                mainController.leftTrigger.and(m_intake.isExtended()).whenActive(new ParallelCommandGroup(
                                 new RunIntakeRoller(m_intake, 0.7),
                                 new LoadBalls(m_indexer, m_ballStopper) 
                 ));
+                mainController.leftTrigger.and(m_intake.isExtended().negate()).whenActive(new LoadBalls(m_indexer, m_ballStopper));
                 mainController.leftTrigger.whenReleased(new ParallelCommandGroup(
                         new RunCommand(m_intake::end, m_intake).withTimeout(0.2),
-                        new RunCommand(m_indexer::end, m_indexer).withTimeout(0.2),
+                        new RunCommand(m_indexer::end, m_indexer).withTimeout(0.2)
                 ));
-                
 
                 // coController.leftBumper
                 // .whenReleased(new ParallelCommandGroup(new RunCommand(m_intake::end,
@@ -330,7 +324,17 @@ public class RobotContainer {
                 // coController.rightTrigger.whenActive(
                 // new TrenchShot(m_flywheel, m_kickerWheel, m_indexer)
                 // );
+                mainController.buttonY.whenReleased(
+                        new RunCommand(()->{
+                        m_indexer.end();
+                        m_intake.end();
+                        m_flywheel.end();
+                        m_kickerWheel.end();
+                        }, m_intake, m_indexer, m_flywheel, m_kickerWheel)
+                );
 
+                mainController.dPadLeft.whenActive(new TurretManual(m_turret, ()-> 0.5).withTimeout(0.3));
+                mainController.dPadRight.whenActive(new TurretManual(m_turret, ()-> -0.5).withTimeout(0.3));
 
                 //stop wheel when released for shooting
                 mainController.rightTrigger.whenReleased(new StopShooting(m_flywheel, m_kickerWheel, m_indexer));

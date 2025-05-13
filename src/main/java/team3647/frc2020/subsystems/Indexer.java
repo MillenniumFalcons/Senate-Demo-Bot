@@ -12,10 +12,16 @@ import java.util.function.Function;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
+import com.revrobotics.CANSparkMax;
+import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+
 import edu.wpi.first.wpilibj.DigitalInput;
+import team3647.frc2020.robot.Constants;
 import team3647.lib.IndexerSignal;
+import team3647.lib.drivers.SparkMaxFactory;
 import team3647.lib.drivers.TalonSRXFactory;
 import team3647.lib.drivers.VictorSPXFactory;
+import team3647.lib.drivers.SparkMaxFactory.Configuration;
 import team3647.lib.wpi.HALMethods;
 
 /**
@@ -24,12 +30,12 @@ import team3647.lib.wpi.HALMethods;
 public class Indexer implements PeriodicSubsystem {
 
     private final VictorSPX leftVertical;
-    private final VictorSPX tunnel;
     private final VictorSPX horizontalRollers;
     private final TalonSRX rightVertical;
+    private final CANSparkMax polycordTunnel;
+    private final CANSparkMax normalTunnel;
 
     private final int leftVerticalPDPSlot;
-    private final int tunnelPDPSlot;
     private final int rollersPDPSlot;
 
     private final DigitalInput bannerSensor;
@@ -38,15 +44,11 @@ public class Indexer implements PeriodicSubsystem {
     private final Function<Integer, Double> getCurrent;
 
     public Indexer(VictorSPXFactory.Configuration leftVerticalRollersConfig,
-            TalonSRXFactory.Configuration rightVerticalRollersConfig, VictorSPXFactory.Configuration tunnelConfig,
+            TalonSRXFactory.Configuration rightVerticalRollersConfig, Configuration polycordTunnelConfig, Configuration normalTunnelConfig,
             VictorSPXFactory.Configuration rollersConfig, int bannerSensorPin, Function<Integer, Double> getCurrent) {
         boolean error = false;
         if (leftVerticalRollersConfig == null) {
             HALMethods.sendDSError("funnel config was null");
-            error = true;
-        }
-        if (tunnelConfig == null) {
-            HALMethods.sendDSError("tunnel config was null");
             error = true;
         }
         if (rollersConfig == null) {
@@ -62,16 +64,15 @@ public class Indexer implements PeriodicSubsystem {
             throw new NullPointerException("1 or more of the arguments to Indexer constructor were null");
         } else {
             leftVertical = VictorSPXFactory.createVictor(leftVerticalRollersConfig);
-            tunnel = VictorSPXFactory.createVictor(tunnelConfig);
             horizontalRollers = VictorSPXFactory.createVictor(rollersConfig);
             rightVertical = TalonSRXFactory.createTalon(rightVerticalRollersConfig);
             this.getCurrent = getCurrent;
         }
 
         leftVerticalPDPSlot = leftVerticalRollersConfig.pdpSlot;
-        tunnelPDPSlot = tunnelConfig.pdpSlot;
         rollersPDPSlot = rollersConfig.pdpSlot;
-
+        polycordTunnel = SparkMaxFactory.createSparkMax(polycordTunnelConfig);
+        normalTunnel = SparkMaxFactory.createSparkMax(normalTunnelConfig);
         bannerSensor = new DigitalInput(bannerSensorPin);
     }
 
@@ -85,9 +86,6 @@ public class Indexer implements PeriodicSubsystem {
     /**
      * @return the tunnelPDPSlot
      */
-    public int getTunnelPDPSlot() {
-        return tunnelPDPSlot;
-    }
 
     /**
      * @return the funnelPDPSlot
@@ -112,12 +110,8 @@ public class Indexer implements PeriodicSubsystem {
         } else {
             rightVertical.set(ControlMode.PercentOutput, signal.getRightVerticalOutput());
         }
-
-        if (getCurrent.apply(tunnelPDPSlot) > 30) {
-            tunnel.set(ControlMode.PercentOutput, signal.getTunnelOutput() * .5);
-        } else {
-            tunnel.set(ControlMode.PercentOutput, signal.getTunnelOutput());
-        }
+        polycordTunnel.set(signal.getRightVerticalOutput() * 0.8);
+        normalTunnel.set(signal.getRightVerticalOutput() * 0.8);
         horizontalRollers.set(ControlMode.PercentOutput, signal.getHorizontalRollersOutput());
     }
 

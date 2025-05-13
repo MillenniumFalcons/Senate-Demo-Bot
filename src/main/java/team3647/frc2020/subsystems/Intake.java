@@ -9,6 +9,8 @@ package team3647.frc2020.subsystems;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
+
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import team3647.lib.drivers.TalonSRXFactory;
 import team3647.lib.wpi.Solenoid;
 
@@ -19,6 +21,8 @@ public class Intake implements PeriodicSubsystem {
 
     public final Solenoid innerPistons;
     private final Solenoid outerPistons;
+    private boolean outerExtended = false;
+    private Trigger isExtended = new Trigger(()-> outerExtended);
 
     private final TalonSRX intakeMotor;
 
@@ -34,10 +38,12 @@ public class Intake implements PeriodicSubsystem {
 
     public void extendOuter() {
         outerPistons.set(true);
+        outerExtended = true;
     }
 
     public void retractOuter() {
         outerPistons.set(false);
+        outerExtended = false;
     }
 
     public void extendInner() {
@@ -65,6 +71,9 @@ public class Intake implements PeriodicSubsystem {
         setOpenLoop(0);
     }
 
+    public Trigger isExtended() {
+        return isExtended;
+    }
     @Override
     public String getName() {
         return "Intake";
