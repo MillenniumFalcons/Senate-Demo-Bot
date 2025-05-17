@@ -51,7 +51,7 @@ public class ShootClosedLoop extends CommandBase {
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        m_kickerWheel.setOpenloop(kickerWheelOutput.apply(shooterRPM.getAsDouble()));
+        m_kickerWheel.setOpenloop(0.7);
         System.out.println("kicker wheel output: " + kickerWheelOutput.apply(shooterRPM.getAsDouble()));
         m_ballStopper.retract();
         m_flywheel.setRPM(shooterRPM.getAsDouble());

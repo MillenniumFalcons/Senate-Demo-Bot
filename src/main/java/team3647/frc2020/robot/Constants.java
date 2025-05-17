@@ -232,7 +232,7 @@ public class Constants {
 
     public static class cKickerWheel {
         public static final int masterPin = 15;
-        public static final boolean inverted = false;
+        public static final boolean inverted = true;
         public static final int peakCurrent = 60;
         public static final int peakCurrentDuration = 1000;
         public static final int continuousCurrent = 20;
@@ -263,7 +263,7 @@ public class Constants {
         // .encoderAccelerationToUnits(encoderVelocityToRPM);
 
         public static double getFlywheelOutputFromFlywheelRPM(double rpm) {
-            // return MathUtil.clamp(rpm / 2 * 0.000111111, .5, 1);
+            //return MathUtil.clamp(rpm / 2 * 0.000111111, ., 1);
             return .4;
         }
     }

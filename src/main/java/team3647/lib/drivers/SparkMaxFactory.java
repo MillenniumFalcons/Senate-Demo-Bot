@@ -11,6 +11,7 @@ import edu.wpi.first.wpilibj.DriverStation;
  * factory defaults. Closed-loop and sensor parameters are not set, as these are
  * expected to be set by the application. (254)
  */
+//USE FUCKING 1.5.0 FOR CANSPARKMAX
 public class SparkMaxFactory {
     private static final int kCANTimeout = 100;
     public static class Configuration {

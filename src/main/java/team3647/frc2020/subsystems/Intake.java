@@ -22,7 +22,7 @@ public class Intake implements PeriodicSubsystem {
     public final Solenoid innerPistons;
     private final Solenoid outerPistons;
     private boolean outerExtended = false;
-    private Trigger isExtended = new Trigger(()-> outerExtended);
+    private boolean innerExtended = false;
 
     private final TalonSRX intakeMotor;
 
@@ -48,10 +48,12 @@ public class Intake implements PeriodicSubsystem {
 
     public void extendInner() {
         innerPistons.set(true);
+        innerExtended = true;
     }
 
     public void retractInner() {
         innerPistons.set(false);
+        innerExtended = false;
     }
 
     private void setOpenLoop(double demand) {
@@ -71,9 +73,13 @@ public class Intake implements PeriodicSubsystem {
         setOpenLoop(0);
     }
 
-    public Trigger isExtended() {
-        return isExtended;
+    public boolean isOuterExtended() {
+        return outerExtended;
     }
+    public boolean isInnerExtended(){
+        return innerExtended;
+    }
+
     @Override
     public String getName() {
         return "Intake";

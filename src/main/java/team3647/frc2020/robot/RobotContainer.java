@@ -7,6 +7,7 @@
 
 package team3647.frc2020.robot;
 
+import edu.wpi.first.wpilibj2.command.button.*;
 import edu.wpi.first.wpilibj.controller.RamseteController;
 import edu.wpi.first.wpilibj.geometry.Pose2d;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
@@ -40,12 +41,14 @@ import team3647.frc2020.commands.LoadingStationIntake;
 import team3647.frc2020.commands.MoveHood;
 import team3647.frc2020.commands.OrganizeFeeder;
 import team3647.frc2020.commands.RemoveBalls;
+import team3647.frc2020.commands.RollTunnelBack;
 import team3647.frc2020.commands.RollTunnelForwards;
 import team3647.frc2020.commands.RunIntakeRoller;
 import team3647.frc2020.commands.ShootClosedLoop;
 import team3647.frc2020.commands.StopShooting;
 import team3647.frc2020.commands.StowIntakeAndOrganizeFeeder;
 import team3647.frc2020.commands.StowIntakeCompletely;
+import team3647.frc2020.commands.ToggleIntake;
 import team3647.frc2020.commands.TrenchShot;
 import team3647.frc2020.commands.TurretManual;
 import team3647.frc2020.commands.TurretMotionMagic;
@@ -90,7 +93,7 @@ public class RobotContainer {
         }
         private final Pose2d startPos;
         private final Auto runningAuto = Auto.LOW_SIX;
-        private final Command autoSequenceToRun;
+        // private final Command autoSequenceToRun;
         private final Joysticks mainController = new Joysticks(0);
         
         private final Joysticks coController = new Joysticks(1);
@@ -158,28 +161,28 @@ public class RobotContainer {
                 m_commandScheduler.setDefaultCommand(m_turret, new TurretManual(m_turret, coController::getLeftStickX));
                 m_indexer.setDefaultCommand(new IndexerManual(m_indexer, coController::getRightStickY));
 
-                switch (runningAuto) {
-                        case LOW_SIX:
-                        startPos = Constants.cField.startingPositionForTrenchRun;
-                        autoSequenceToRun = sixBallBottom;
-                        break;
-                        case  MID_SIX:
-                        autoSequenceToRun = midFive;
-                        startPos = Constants.cField.middleStart;
-                        break;
-                        case MID_THREE:
-                        startPos = Constants.cField.startingPoseInfrontOfPoleOnInit;
-                        autoSequenceToRun = topStraight;
-                        break;
-                        case TOP_FIVE:
-                        startPos = Constants.cField.startingPosParallelToTrenchEdge;
-                        autoSequenceToRun = topFive;
-                        break;
-                        default:
-                        startPos = Constants.cField.startingPositionForTrenchRun;
-                        autoSequenceToRun = sixBallBottom;
-                }
-                System.out.println(Units.metersToInches( startPos.getY()));
+                // switch (runningAuto) {
+                //         case LOW_SIX:
+                         startPos = Constants.cField.startingPositionForTrenchRun;
+                //         autoSequenceToRun = sixBallBottom;
+                //         break;
+                //         case  MID_SIX:
+                //         autoSequenceToRun = midFive;
+                //         startPos = Constants.cField.middleStart;
+                //         break;
+                //         case MID_THREE:
+                //         startPos = Constants.cField.startingPoseInfrontOfPoleOnInit;
+                //         autoSequenceToRun = topStraight;
+                //         break;
+                //         case TOP_FIVE:
+                //         startPos = Constants.cField.startingPosParallelToTrenchEdge;
+                //         autoSequenceToRun = topFive;
+                //         break;
+                //         default:
+                //         startPos = Constants.cField.startingPositionForTrenchRun;
+                //         autoSequenceToRun = sixBallBottom;
+                // }
+                // System.out.println(Units.metersToInches( startPos.getY()));
 
                 m_printer.addDouble("shooter rpm based on distance", this::getFlywheelRPM);
                 m_printer.addDouble("kicker wheel amps", m_kickerWheel::getMasterCurrent);
@@ -230,14 +233,14 @@ public class RobotContainer {
                 // mainController.leftBumper.and(mainController.leftTrigger).whenActive(new ParallelCommandGroup(
                 //                 new GroundIntake(m_intake), new LoadBalls(m_indexer, m_ballStopper)));
 
-                mainController.leftBumper.whenPressed(new ExtendIntakeToGround(m_intake).withTimeout(0.2));
-                mainController.leftBumper.whenReleased(
-                        new RunCommand(m_intake::retractOuter, m_intake).withTimeout(0.3));
-                mainController.leftTrigger.and(m_intake.isExtended()).whenActive(new ParallelCommandGroup(
+                mainController.leftBumper.whenPressed(new ToggleIntake(m_intake).withTimeout(0.2));
+                // mainController.leftBumper.whenReleased(
+                //         new RunCommand(m_intake::retractOuter, m_intake).withTimeout(0.3));
+                mainController.leftTrigger.and(new Trigger(m_intake::isOuterExtended)).whenActive(new ParallelCommandGroup(
                                 new RunIntakeRoller(m_intake, 0.7),
-                                new LoadBalls(m_indexer, m_ballStopper) 
+                                new LoadBalls(m_indexer, m_ballStopper)
                 ));
-                mainController.leftTrigger.and(m_intake.isExtended().negate()).whenActive(new LoadBalls(m_indexer, m_ballStopper));
+                mainController.leftTrigger.and(new Trigger(m_intake::isOuterExtended).negate()).whenActive(new LoadBalls(m_indexer, m_ballStopper));
                 mainController.leftTrigger.whenReleased(new ParallelCommandGroup(
                         new RunCommand(m_intake::end, m_intake).withTimeout(0.2),
                         new RunCommand(m_indexer::end, m_indexer).withTimeout(0.2)
@@ -313,7 +316,7 @@ public class RobotContainer {
                                 new ParallelCommandGroup(new MoveHood(m_hood, Constants.cHood.trenchShotPosition),
                                                 new TrenchShot(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper)));
 
-                mainController.buttonY.whenActive(new ParallelCommandGroup(
+                mainController.buttonY.and(new Trigger(m_intake::isInnerExtended)).whenActive(new ParallelCommandGroup(
                                 new MoveHood(m_hood, Constants.cHood.rightUpToTowerShotPosition),
                                 new BatterShot(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper)));
 
@@ -332,7 +335,18 @@ public class RobotContainer {
                         m_kickerWheel.end();
                         }, m_intake, m_indexer, m_flywheel, m_kickerWheel)
                 );
+                mainController.dPadDown.whenActive(
+                        new RollTunnelBack(m_indexer, m_kickerWheel)
+                );
+                mainController.dPadDown.whenReleased(
+                        new RunCommand(()-> {
+                                m_indexer.end();
+                                m_kickerWheel.end();
+                        }, m_indexer, m_kickerWheel)
+                        
+                );
 
+        
                 mainController.dPadLeft.whenActive(new TurretManual(m_turret, ()-> 0.5).withTimeout(0.3));
                 mainController.dPadRight.whenActive(new TurretManual(m_turret, ()-> -0.5).withTimeout(0.3));
 
@@ -385,31 +399,29 @@ public class RobotContainer {
 
         
         
-//SIX BALL BOTTOM (IN FRONT OF TOWER 3 SHOOT-TRENCH-SHOOT ) ////////////////////////////////////////////////////////////////////////////////////////
-        private final RamseteCommand initiationLineToTrench =
-                new RamseteCommand(Trajectories.initiationLineToTrenchBalls, m_drivetrain::getPose,
-                        new RamseteController(), Constants.cDrivetrain.kDriveKinematics,
-                        m_drivetrain::setVelocityMpS, m_drivetrain);
-        private final RamseteCommand trenchToCenterTower = new RamseteCommand(
-                Trajectories.trenchBall3ToFrontOfTower, m_drivetrain::getPose, new RamseteController(),
-                Constants.cDrivetrain.kDriveKinematics, m_drivetrain::setVelocityMpS, m_drivetrain);
-//EIGHT BALL BOTTOM (IN FRONT OF TOWER 3 SHOOT-RENDEZVOUS-TRENCH-STOP)/////////////////////////////////////////////////////////////////////////////////////////
-        private final RamseteCommand initiationLineToRendezvousBalls = new RamseteCommand(
-                Trajectories.bumpersInFrontOfTowerToRendezvousBalls, m_drivetrain::getPose, new RamseteController(), 
-                Constants.cDrivetrain.kDriveKinematics, m_drivetrain::setVelocityMpS, m_drivetrain);
-//FIVE BALL TOP
-        private final RamseteCommand initiationLoadingToContolPanel = new RamseteCommand(
-                Trajectories.topStartToContorlPannelBalls, m_drivetrain::getPose, new RamseteController(),
-                Constants.cDrivetrain.kDriveKinematics, m_drivetrain::setVelocityMpS, m_drivetrain);
+// //SIX BALL BOTTOM (IN FRONT OF TOWER 3 SHOOT-TRENCH-SHOOT ) ////////////////////////////////////////////////////////////////////////////////////////
+//         private final RamseteCommand initiationLineToTrench =
+//                 new RamseteCommand(Trajectories.initiationLineToTrenchBalls, m_drivetrain::getPose,
+//                         new RamseteController(), Constants.cDrivetrain.kDriveKinematics,
+//                         m_drivetrain::setVelocityMpS, m_drivetrain);
+//         private final RamseteCommand trenchToCenterTower = new RamseteCommand(
+//                 Trajectories.trenchBall3ToFrontOfTower, m_drivetrain::getPose, new RamseteController(),
+//                 Constants.cDrivetrain.kDriveKinematics, m_drivetrain::setVelocityMpS, m_drivetrain);
+// //EIGHT BALL BOTTOM (IN FRONT OF TOWER 3 SHOOT-RENDEZVOUS-TRENCH-STOP)/////////////////////////////////////////////////////////////////////////////////////////
+//         private final RamseteCommand initiationLineToRendezvousBalls = new RamseteCommand(
+//                 Trajectories.bumpersInFrontOfTowerToRendezvousBalls, m_drivetrain::getPose, new RamseteController(), 
+//                 Constants.cDrivetrain.kDriveKinematics, m_drivetrain::setVelocityMpS, m_drivetrain);
+// //FIVE BALL TOP
+//         private final RamseteCommand initiationLoadingToContolPanel = new RamseteCommand(
+//                 Trajectories.topStartToContorlPannelBalls, m_drivetrain::getPose, new RamseteController(),
+//                 Constants.cDrivetrain.kDriveKinematics, m_drivetrain::setVelocityMpS, m_drivetrain);
 
-        private final RamseteCommand controlPanelToTarget = new RamseteCommand(Trajectories.controlPanelToTower,
-        m_drivetrain::getPose, new RamseteController(), Constants.cDrivetrain.kDriveKinematics, m_drivetrain::setVelocityMpS, m_drivetrain);
+//         private final RamseteCommand controlPanelToTarget = new RamseteCommand(Trajectories.controlPanelToTower,
+//         m_drivetrain::getPose, new RamseteController(), Constants.cDrivetrain.kDriveKinematics, m_drivetrain::setVelocityMpS, m_drivetrain);
 
-//straigh three in front of pole 
-        private final RamseteCommand poleToWall = new RamseteCommand(Trajectories.straightToTarget,m_drivetrain::getPose, new RamseteController(),
-        Constants.cDrivetrain.kDriveKinematics, m_drivetrain::setVelocityMpS, m_drivetrain);
-
-
+// //straigh three in front of pole 
+//         private final RamseteCommand poleToWall = new RamseteCommand(Trajectories.straightToTarget,m_drivetrain::getPose, new RamseteController(),
+//         Constants.cDrivetrain.kDriveKinematics, m_drivetrain::setVelocityMpS, m_drivetrain);
 
 
 
@@ -418,133 +430,135 @@ public class RobotContainer {
 
 
 
-//EIGHT BALL MIDDLE (MIDDLE 3 SHOOT-RENDEZVOUS TOP- RENDEVOUS BOTTOM- SHOOT) //////////////////////////////////////////////////////////////////////////////////////////////////
-        private final RamseteCommand midFiveBack = 
-                        new RamseteCommand(Trajectories.midTrajectBack, m_drivetrain::getPose, new RamseteController(), 
-                        Constants.cDrivetrain.kDriveKinematics, m_drivetrain::setVelocityMpS, m_drivetrain);
+
+
+// //EIGHT BALL MIDDLE (MIDDLE 3 SHOOT-RENDEZVOUS TOP- RENDEVOUS BOTTOM- SHOOT) //////////////////////////////////////////////////////////////////////////////////////////////////
+//         private final RamseteCommand midFiveBack = 
+//                         new RamseteCommand(Trajectories.midTrajectBack, m_drivetrain::getPose, new RamseteController(), 
+//                         Constants.cDrivetrain.kDriveKinematics, m_drivetrain::setVelocityMpS, m_drivetrain);
         
 
-//SIX BALL BOTTOM (SHOOT 3 GRAB 3 IN TRENCH SHOOT)
-        private final Command sixBallBottom =  new SequentialCommandGroup(
-                new TurretMotionMagic(m_turret, 30).withTimeout(.6),
+// //SIX BALL BOTTOM (SHOOT 3 GRAB 3 IN TRENCH SHOOT)
+//         private final Command sixBallBottom =  new SequentialCommandGroup(
+//                 new TurretMotionMagic(m_turret, 30).withTimeout(.6),
 
-                new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
-                        m_visionController::getFilteredYaw, m_visionController::isValid)
-                                .withTimeout(1),
-                new ParallelCommandGroup(new ShootClosedLoop(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper,
-                this::getFlywheelRPM, Constants.cKickerWheel::getFlywheelOutputFromFlywheelRPM,
-                IndexerSignal.GO_FAST).withTimeout(3), new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
-                m_visionController::getFilteredYaw, m_visionController::isValid)).withTimeout(3), new StopShooting(m_flywheel, m_kickerWheel, m_indexer),
-                new ParallelDeadlineGroup(initiationLineToTrench,
-                        new GroundIntakeSequence(m_intake, m_indexer, m_ballStopper)),
-                new RunCommand(this::stopDrivetrain, m_drivetrain).withTimeout(.1), 
-                new ParallelDeadlineGroup(
-                        trenchToCenterTower,
-                        new SequentialCommandGroup(
-                                new StowIntakeAndOrganizeFeeder(m_intake, m_indexer, m_kickerWheel)
-                                        .withTimeout(2),
-                                new LoadBalls(m_indexer, m_ballStopper)),
-                        new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
-                                m_visionController::getFilteredYaw, m_visionController::isValid),
-                        new AccelerateFlywheelKickerWheel(m_flywheel, m_kickerWheel, 4000, true)),
-                new RunCommand(this::stopDrivetrain, m_drivetrain).withTimeout(.1),
-                new ParallelCommandGroup(new ShootClosedLoop(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper,
-                this::getFlywheelRPM, Constants.cKickerWheel::getFlywheelOutputFromFlywheelRPM,
-                IndexerSignal.GO_FAST).withTimeout(3), new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
-                m_visionController::getFilteredYaw, m_visionController::isValid)).withTimeout(3),
-                new StopShooting(m_flywheel, m_kickerWheel, m_indexer));
-        //MID FIVE////////////////////////////
+//                 new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
+//                         m_visionController::getFilteredYaw, m_visionController::isValid)
+//                                 .withTimeout(1),
+//                 new ParallelCommandGroup(new ShootClosedLoop(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper,
+//                 this::getFlywheelRPM, Constants.cKickerWheel::getFlywheelOutputFromFlywheelRPM,
+//                 IndexerSignal.GO_FAST).withTimeout(3), new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
+//                 m_visionController::getFilteredYaw, m_visionController::isValid)).withTimeout(3), new StopShooting(m_flywheel, m_kickerWheel, m_indexer),
+//                 new ParallelDeadlineGroup(initiationLineToTrench,
+//                         new GroundIntakeSequence(m_intake, m_indexer, m_ballStopper)),
+//                 new RunCommand(this::stopDrivetrain, m_drivetrain).withTimeout(.1), 
+//                 new ParallelDeadlineGroup(
+//                         trenchToCenterTower,
+//                         new SequentialCommandGroup(
+//                                 new StowIntakeAndOrganizeFeeder(m_intake, m_indexer, m_kickerWheel)
+//                                         .withTimeout(2),
+//                                 new LoadBalls(m_indexer, m_ballStopper)),
+//                         new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
+//                                 m_visionController::getFilteredYaw, m_visionController::isValid),
+//                         new AccelerateFlywheelKickerWheel(m_flywheel, m_kickerWheel, 4000, true)),
+//                 new RunCommand(this::stopDrivetrain, m_drivetrain).withTimeout(.1),
+//                 new ParallelCommandGroup(new ShootClosedLoop(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper,
+//                 this::getFlywheelRPM, Constants.cKickerWheel::getFlywheelOutputFromFlywheelRPM,
+//                 IndexerSignal.GO_FAST).withTimeout(3), new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
+//                 m_visionController::getFilteredYaw, m_visionController::isValid)).withTimeout(3),
+//                 new StopShooting(m_flywheel, m_kickerWheel, m_indexer));
+//         //MID FIVE////////////////////////////
 
-        private final RamseteCommand startToShootingPose =
-                new RamseteCommand(Trajectories.middleStartToShootingPose, m_drivetrain::getPose, 
-                new RamseteController(),Constants.cDrivetrain.kDriveKinematics, m_drivetrain::setVelocityMpS, m_drivetrain);
+//         private final RamseteCommand startToShootingPose =
+//                 new RamseteCommand(Trajectories.middleStartToShootingPose, m_drivetrain::getPose, 
+//                 new RamseteController(),Constants.cDrivetrain.kDriveKinematics, m_drivetrain::setVelocityMpS, m_drivetrain);
 
-        private final RamseteCommand ShootingPoseToSwitchBalls =
-                new RamseteCommand(Trajectories.switchBallCollectorPath, m_drivetrain::getPose, 
-                new RamseteController(),Constants.cDrivetrain.kDriveKinematics, m_drivetrain::setVelocityMpS, m_drivetrain);
+//         private final RamseteCommand ShootingPoseToSwitchBalls =
+//                 new RamseteCommand(Trajectories.switchBallCollectorPath, m_drivetrain::getPose, 
+//                 new RamseteController(),Constants.cDrivetrain.kDriveKinematics, m_drivetrain::setVelocityMpS, m_drivetrain);
 
-        private final RamseteCommand SwitchBallsToShootingPose =
-                new RamseteCommand(Trajectories.returnFromSwitchToShootingPose, m_drivetrain::getPose, 
-                new RamseteController(),Constants.cDrivetrain.kDriveKinematics, m_drivetrain::setVelocityMpS, m_drivetrain);
+//         private final RamseteCommand SwitchBallsToShootingPose =
+//                 new RamseteCommand(Trajectories.returnFromSwitchToShootingPose, m_drivetrain::getPose, 
+//                 new RamseteController(),Constants.cDrivetrain.kDriveKinematics, m_drivetrain::setVelocityMpS, m_drivetrain);
 
-        private final Command midFive = 
-                new SequentialCommandGroup(
-                        new ParallelDeadlineGroup(startToShootingPose, new SequentialCommandGroup(new TurretMotionMagic(m_turret, 180), new PerpetualCommand(
-                                new TurretMotionMagic(m_turret, 180)).withInterrupt(m_visionController::isValid).withTimeout(1.5), 
-                        new ParallelCommandGroup(new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
-                        m_visionController::getFilteredYaw, m_visionController::isValid), new AccelerateFlywheelKickerWheel(m_flywheel, m_kickerWheel, 4000, true)))),
-                        new RunCommand(this::stopDrivetrain, m_drivetrain).withTimeout(.1),
-                        new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
-                        m_visionController::getFilteredYaw, m_visionController::isValid).withTimeout(1), 
-                        new ParallelCommandGroup(new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
-                                m_visionController::getFilteredYaw, m_visionController::isValid),
-                                new ShootClosedLoop(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper,
-                                this::getFlywheelRPM, Constants.cKickerWheel::getFlywheelOutputFromFlywheelRPM,
-                                IndexerSignal.GO_FAST), new GroundIntakePos(m_intake)).withTimeout(2.5),
-                        new StopShooting(m_flywheel, m_kickerWheel, m_indexer),
-                        new ParallelDeadlineGroup(
-                                ShootingPoseToSwitchBalls,
-                                new GroundIntakeSequence(m_intake, m_indexer, m_ballStopper)),
-                        new RunCommand(this::stopDrivetrain, m_drivetrain).withTimeout(.1), 
-                        new ParallelDeadlineGroup(
-                        SwitchBallsToShootingPose,
-                        new SequentialCommandGroup(
-                                new StowIntakeAndOrganizeFeeder(m_intake, m_indexer, m_kickerWheel)
-                                        .withTimeout(2),
-                                new LoadBalls(m_indexer, m_ballStopper)),
-                        new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
-                                m_visionController::getFilteredYaw, m_visionController::isValid),
-                        new AccelerateFlywheelKickerWheel(m_flywheel, m_kickerWheel, 4000, true)),
-                        new RunCommand(this::stopDrivetrain, m_drivetrain).withTimeout(.1), 
-                        new ParallelCommandGroup(new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
-                                m_visionController::getFilteredYaw, m_visionController::isValid),
-                                new ShootClosedLoop(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper,
-                                this::getFlywheelRPM, Constants.cKickerWheel::getFlywheelOutputFromFlywheelRPM,
-                                IndexerSignal.GO_FAST)).withTimeout(3),
-                        new StopShooting(m_flywheel, m_kickerWheel, m_indexer)
-                        );
+//         private final Command midFive = 
+//                 new SequentialCommandGroup(
+//                         new ParallelDeadlineGroup(startToShootingPose, new SequentialCommandGroup(new TurretMotionMagic(m_turret, 180), new PerpetualCommand(
+//                                 new TurretMotionMagic(m_turret, 180)).withInterrupt(m_visionController::isValid).withTimeout(1.5), 
+//                         new ParallelCommandGroup(new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
+//                         m_visionController::getFilteredYaw, m_visionController::isValid), new AccelerateFlywheelKickerWheel(m_flywheel, m_kickerWheel, 4000, true)))),
+//                         new RunCommand(this::stopDrivetrain, m_drivetrain).withTimeout(.1),
+//                         new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
+//                         m_visionController::getFilteredYaw, m_visionController::isValid).withTimeout(1), 
+//                         new ParallelCommandGroup(new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
+//                                 m_visionController::getFilteredYaw, m_visionController::isValid),
+//                                 new ShootClosedLoop(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper,
+//                                 this::getFlywheelRPM, Constants.cKickerWheel::getFlywheelOutputFromFlywheelRPM,
+//                                 IndexerSignal.GO_FAST), new GroundIntakePos(m_intake)).withTimeout(2.5),
+//                         new StopShooting(m_flywheel, m_kickerWheel, m_indexer),
+//                         new ParallelDeadlineGroup(
+//                                 ShootingPoseToSwitchBalls,
+//                                 new GroundIntakeSequence(m_intake, m_indexer, m_ballStopper)),
+//                         new RunCommand(this::stopDrivetrain, m_drivetrain).withTimeout(.1), 
+//                         new ParallelDeadlineGroup(
+//                         SwitchBallsToShootingPose,
+//                         new SequentialCommandGroup(
+//                                 new StowIntakeAndOrganizeFeeder(m_intake, m_indexer, m_kickerWheel)
+//                                         .withTimeout(2),
+//                                 new LoadBalls(m_indexer, m_ballStopper)),
+//                         new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
+//                                 m_visionController::getFilteredYaw, m_visionController::isValid),
+//                         new AccelerateFlywheelKickerWheel(m_flywheel, m_kickerWheel, 4000, true)),
+//                         new RunCommand(this::stopDrivetrain, m_drivetrain).withTimeout(.1), 
+//                         new ParallelCommandGroup(new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
+//                                 m_visionController::getFilteredYaw, m_visionController::isValid),
+//                                 new ShootClosedLoop(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper,
+//                                 this::getFlywheelRPM, Constants.cKickerWheel::getFlywheelOutputFromFlywheelRPM,
+//                                 IndexerSignal.GO_FAST)).withTimeout(3),
+//                         new StopShooting(m_flywheel, m_kickerWheel, m_indexer)
+//                         );
         
 
-        //TOP FIVE
-        private final Command topFive = new SequentialCommandGroup(
-                new ParallelDeadlineGroup(initiationLoadingToContolPanel, new GroundIntakeSequence(m_intake, m_indexer, m_ballStopper)),
-                        new RunCommand(this::stopDrivetrain, m_drivetrain).withTimeout(.1),
-                                new ParallelDeadlineGroup(
-                                        controlPanelToTarget,
-                                        new SequentialCommandGroup(
-                                                new StowIntakeAndOrganizeFeeder(m_intake, m_indexer, m_kickerWheel)
-                                                        .withTimeout(2),
-                                                new LoadBalls(m_indexer, m_ballStopper))),
-                        new RunCommand(this::stopDrivetrain, m_drivetrain).withTimeout(.1),
-                        new TurretMotionMagic(m_turret, 60),
-                        new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
-                                m_visionController::getFilteredYaw, m_visionController::isValid).withTimeout(1),
-                                new ParallelCommandGroup(
-                                        new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
-                                                m_visionController::getFilteredYaw, m_visionController::isValid),
-                                        new ShootClosedLoop(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper,
-                                                this::getFlywheelRPM, Constants.cKickerWheel::getFlywheelOutputFromFlywheelRPM,
-                                                IndexerSignal.GO_FAST)
-                                ).withTimeout(4),
-                new StopShooting(m_flywheel, m_kickerWheel, m_indexer)
-        );
+//         //TOP FIVE
+//         private final Command topFive = new SequentialCommandGroup(
+//                 new ParallelDeadlineGroup(initiationLoadingToContolPanel, new GroundIntakeSequence(m_intake, m_indexer, m_ballStopper)),
+//                         new RunCommand(this::stopDrivetrain, m_drivetrain).withTimeout(.1),
+//                                 new ParallelDeadlineGroup(
+//                                         controlPanelToTarget,
+//                                         new SequentialCommandGroup(
+//                                                 new StowIntakeAndOrganizeFeeder(m_intake, m_indexer, m_kickerWheel)
+//                                                         .withTimeout(2),
+//                                                 new LoadBalls(m_indexer, m_ballStopper))),
+//                         new RunCommand(this::stopDrivetrain, m_drivetrain).withTimeout(.1),
+//                         new TurretMotionMagic(m_turret, 60),
+//                         new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
+//                                 m_visionController::getFilteredYaw, m_visionController::isValid).withTimeout(1),
+//                                 new ParallelCommandGroup(
+//                                         new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
+//                                                 m_visionController::getFilteredYaw, m_visionController::isValid),
+//                                         new ShootClosedLoop(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper,
+//                                                 this::getFlywheelRPM, Constants.cKickerWheel::getFlywheelOutputFromFlywheelRPM,
+//                                                 IndexerSignal.GO_FAST)
+//                                 ).withTimeout(4),
+//                 new StopShooting(m_flywheel, m_kickerWheel, m_indexer)
+//         );
 
-//in front of pole to wall straight 3 ball
-        private final Command topStraight = new SequentialCommandGroup(new TurretMotionMagic(m_turret, -10).withTimeout(.4),
-        new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
-                m_visionController::getFilteredYaw, m_visionController::isValid)
-                        .withTimeout(.3), new ShootClosedLoop(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper,
-                this::getFlywheelRPM, Constants.cKickerWheel::getFlywheelOutputFromFlywheelRPM,
-                IndexerSignal.GO_FAST).withTimeout(3),
-        new StopShooting(m_flywheel, m_kickerWheel, m_indexer), poleToWall, new RunCommand(this::stopDrivetrain, m_drivetrain).withTimeout(.1));
+// //in front of pole to wall straight 3 ball
+//         private final Command topStraight = new SequentialCommandGroup(new TurretMotionMagic(m_turret, -10).withTimeout(.4),
+//         new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
+//                 m_visionController::getFilteredYaw, m_visionController::isValid)
+//                         .withTimeout(.3), new ShootClosedLoop(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper,
+//                 this::getFlywheelRPM, Constants.cKickerWheel::getFlywheelOutputFromFlywheelRPM,
+//                 IndexerSignal.GO_FAST).withTimeout(3),
+//         new StopShooting(m_flywheel, m_kickerWheel, m_indexer), poleToWall, new RunCommand(this::stopDrivetrain, m_drivetrain).withTimeout(.1));
         
         
                                 
-        public Command getAutonomousCommand() {
+//         public Command getAutonomousCommand() {
           
-                return autoSequenceToRun;
+//                 return autoSequenceToRun;
           
-        }
+//         }
         public void stopDrivetrain() {
                 m_drivetrain.setOpenLoop(DriveSignal.BRAKE);
         }

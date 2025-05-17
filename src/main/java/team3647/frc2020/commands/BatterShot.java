@@ -13,8 +13,8 @@ public class BatterShot extends ShootClosedLoop {
      */
     public BatterShot(Flywheel flywheel, KickerWheel kickerWheel, Indexer indexer, BallStopper ballStopper) {
         super(flywheel, kickerWheel, indexer, ballStopper, () -> {
-            return 4000;
-        }, Constants.cKickerWheel::getFlywheelOutputFromFlywheelRPM, IndexerSignal.GO);
+            return 5000;
+        }, (c) -> 0.7, IndexerSignal.GO);
         // Use addRequirements() here to declare subsystem dependencies.
     }
 }

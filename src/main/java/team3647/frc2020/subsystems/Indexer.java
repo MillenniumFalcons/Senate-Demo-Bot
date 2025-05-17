@@ -110,8 +110,8 @@ public class Indexer implements PeriodicSubsystem {
         } else {
             rightVertical.set(ControlMode.PercentOutput, signal.getRightVerticalOutput());
         }
-        polycordTunnel.set(signal.getRightVerticalOutput() * 0.8);
-        normalTunnel.set(signal.getRightVerticalOutput() * 0.8);
+        polycordTunnel.set(signal.getRightVerticalOutput() * -0.5);
+        normalTunnel.set(signal.getRightVerticalOutput() * 0.5);
         horizontalRollers.set(ControlMode.PercentOutput, signal.getHorizontalRollersOutput());
     }
 
